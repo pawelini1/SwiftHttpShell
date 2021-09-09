@@ -1,5 +1,6 @@
 import Foundation
 import Promises
+import XCTest
 
 public class HttpShell {
     public static func localhost(port: UInt16) -> HttpShell {
@@ -13,31 +14,41 @@ public class HttpShell {
         self.builder = RequestBuilder(baseURL: baseUrl)
     }
     
-    @discardableResult
-    public func run(_ command: Command) throws -> OutputResponse {
-        try runCodableRequest(.shell, parameters: [
-            "command": command
-        ])
-    }
-    
-    @discardableResult
-    public func start(_ command: Command) throws -> ProcessResponse {
-        try runCodableRequest(.process, parameters: [
-            "command": command
-        ])
-    }
-    
-    @discardableResult
-    public func finish(_ identifer: ProcessIdentifer) throws -> OutputResponse {
-        try runCodableRequest(.terminate, parameters: [
-            "id": identifer
-        ])
-    }
-    
-    public func file(_ path: String) throws -> Data {
-        try runDataRequest(.file, parameters: [
-            "path": path
-        ])
+    public func shell(_ command: Command) throws -> Response {
+        switch command.type {
+        case .shell(command: let cmd):
+            return try XCTContext.runActivity(named: command.message) { activity in
+                return try runCodableRequest(.shell, parameters: [
+                    "command": cmd
+                ]) as OutputResponse
+            }
+        case .start(command: let cmd, identifer: let identifer):
+            return try XCTContext.runActivity(named: command.message) { activity in
+                return try runCodableRequest(.start, parameters: [
+                    "command": cmd,
+                    "id": identifer
+                ].compactMapValues { $0 }) as ProcessResponse
+            }
+        case .finish(identifer: let identifer):
+            return try XCTContext.runActivity(named: command.message) { activity in
+                return try runCodableRequest(.finish, parameters: [
+                    "id": identifer
+                ]) as OutputResponse
+            }
+        case .multi(commands: let commands):
+            return try XCTContext.runActivity(named: command.message) { activity in
+                return try MultiResponse(responses: commands.map { try self.shell($0) })
+            }
+        case .file(atPath: let path, completion: let completion):
+            return try XCTContext.runActivity(named: command.message) { activity in
+                let data = try runDataRequest(.file, parameters: [
+                    "path": path
+                ])
+                try completion(data)
+                return FileResponse(filePath: path)
+            }
+        }
+        
     }
 }
 
@@ -53,7 +64,7 @@ private extension HttpShell {
 
 private enum Endpoint: String {
     case shell
-    case process
-    case terminate
+    case start
+    case finish
     case file
 }

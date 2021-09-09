@@ -1,20 +1,19 @@
 import Foundation
 
-public struct Command: Encodable {
-    private let command: String
-    
-    public init(command: String) {
-        self.command = command
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(command)
-    }
+public enum CommandType {
+    case shell(command: String)
+    case start(command: String, identifer: ProcessIdentifer?)
+    case finish(identifer: ProcessIdentifer)
+    case multi(commands: [Command])
+    case file(atPath: String, completion: (Data) throws -> Void)
 }
 
-extension Command: ExpressibleByStringLiteral {
-    public init(stringLiteral value: StringLiteralType) {
-        self.init(command: value)
+public struct Command {
+    public let message: String
+    public let type: CommandType
+    
+    public init(type: CommandType, message: String) {
+        self.type = type
+        self.message = message
     }
 }

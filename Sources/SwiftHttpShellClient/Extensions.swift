@@ -1,5 +1,11 @@
 import Foundation
 
+public extension String {
+    var escapingSpaces: String {
+        return replacingOccurrences(of: " ", with: "\\ ")
+    }
+}
+
 extension URL {
     static func localhost(port: UInt16 = 8888) -> URL {
         URL(string: "http://localhost:\(port)/")!

@@ -14,8 +14,8 @@ class ShellHttpServer: HttpServer {
         super.init()
         
         POST["/shell"] = shell(with:)
-        POST["/process"] = process(with:)
-        POST["/terminate"] = terminate(with:)
+        POST["/start"] = start(with:)
+        POST["/finish"] = finish(with:)
         POST["/file"] = file(with:)
     }
 }
@@ -35,35 +35,36 @@ extension ShellHttpServer {
         do {
             let parameters = request.parseJson(with: jsonDecoder)
             guard let command = parameters.first(where: { $0.0 == "command" })?.1 else {
-                return HttpResponse.badRequest(.error(ShellHttpServerError.missingParameter("command")))
+                throw ShellHttpServerError.missingParameter("command")
             }
             print("Handling command: \n".cyan + command.yellow)
             let output = try shellOut(to: command)
             print("Success!".green)
             return HttpResponse.ok(.output(output))
         } catch {
-            print("Failure:".red + error.localizedDescription)
+            print("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
     
-    func process(with request: HttpRequest) -> HttpResponse {
+    func start(with request: HttpRequest) -> HttpResponse {
         do {
             let parameters = request.parseJson(with: jsonDecoder)
             guard let command = parameters.first(where: { $0.0 == "command" })?.1 else {
-                return HttpResponse.badRequest(.error(ShellHttpServerError.missingParameter("command")))
+                throw ShellHttpServerError.missingParameter("command")
             }
+            let identifer = parameters.first(where: { $0.0 == "id" })?.1
             print("Handling processing command: \n".cyan + command.yellow)
-            let identifer = try runNewProcess(for: command).resolveOrThrow()
-            print("Processing command success with identifer: ".green + identifer)
-            return HttpResponse.ok(.processIdentifer(identifer))
+            let processIdentifer = try runNewProcess(for: command, with: identifer).resolveOrThrow()
+            print("Processing command success with identifer: ".green + processIdentifer)
+            return HttpResponse.ok(.processIdentifer(processIdentifer))
         } catch {
-            print("Failure:".red + error.localizedDescription)
+            print("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
     
-    func terminate(with request: HttpRequest) -> HttpResponse {
+    func finish(with request: HttpRequest) -> HttpResponse {
         do {
             let parameters = request.parseJson(with: jsonDecoder)
             guard let identifer = parameters.first(where: { $0.0 == "id" })?.1 else {
@@ -74,7 +75,7 @@ extension ShellHttpServer {
             print("Terminating success!".green)
             return HttpResponse.ok(.output(output))
         } catch {
-            print("Failure:".red + error.localizedDescription)
+            print("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
@@ -90,20 +91,16 @@ extension ShellHttpServer {
                 try writer.write(try File(path: path).read())
             }
         } catch {
-            print("Failure:".red + error.localizedDescription)
+            print("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
 }
 
 extension ShellHttpServer {
-    func runNewProcess(for command: ShellOutCommand) -> Promise<ProcessIdentifier> {
-        runNewProcess(for: command.string)
-    }
-    
-    func runNewProcess(for command: String) -> Promise<ProcessIdentifier> {
+    func runNewProcess(for command: String, with identifer: ProcessIdentifier? = nil) -> Promise<ProcessIdentifier> {
         return Promise { () -> ProcessIdentifier in
-            let process = try self.storage.newProcess().resolveOrThrow()
+            let process = try self.storage.newProcess(with: identifer).resolveOrThrow()
             DispatchQueue.global().async {
                 let _ = process.run(command)
             }
@@ -114,7 +111,9 @@ extension ShellHttpServer {
     func terminateProcess(with identifer: ProcessIdentifier) -> Promise<String> {
         return Promise { () -> String in
             let process = try self.storage.process(with: identifer).resolveOrThrow()
-            return try process.terminate().resolveOrThrow()
+            let output = try process.terminate().resolveOrThrow()
+            try self.storage.removeProcess(with: identifer).resolveOrThrow()
+            return output
         }
     }
 }
