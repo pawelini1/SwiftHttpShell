@@ -5,7 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftHttpShell",
-    platforms: [.iOS(.v10)],
+    platforms: [
+        .iOS(.v10)
+    ],
     products: [
         .executable(name: "swift-http-shell", targets: ["SwiftHttpShell"]),
         .library(name: "SwiftHttpShellClient", targets: ["SwiftHttpShellClient"])

@@ -16,7 +16,7 @@ struct SwiftHttpShell: ParsableCommand {
             do {
                 let server = ShellHttpServer()
                 try server.start(port, forceIPv4: true)
-                print("SwiftHttpShell server has started. Use http://localhost:\(port) ...".cyan)
+                logMessage("SwiftHttpShell server has started.\nUse http://localhost:\(port) ...\n".cyan)
                 RunLoop.main.run()
             } catch {
                 Self.exitWithMessage(for: error)
@@ -27,19 +27,19 @@ struct SwiftHttpShell: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "swift-http-shell",
         abstract: "A utility for running shell commands through HTTP API.",
-        version: "1.0.0",
+        version: "0.2.1",
         subcommands: [Start.self]
     )
 }
 
 private extension ParsableCommand {
     static func exitWithMessage(for error: Error? = nil) -> Never {
-        print("SwiftHTTPShell finished with an error...".red)
+        logError("SwiftHTTPShell finished with an error...".red)
         exit(withError: error)
     }
     
     static func exitWithSuccess() {
-        print("SwiftHTTPShell finished successfully...".green)
+        logMessage("SwiftHTTPShell finished successfully...".green)
         exit()
     }
 }

@@ -37,12 +37,12 @@ extension ShellHttpServer {
             guard let command = parameters.first(where: { $0.0 == "command" })?.1 else {
                 throw ShellHttpServerError.missingParameter("command")
             }
-            print("Handling command: \n".cyan + command.yellow)
+            logMessage("Handling command: \n".cyan + command.yellow)
             let output = try shellOut(to: command)
-            print("Success!".green)
+            logMessage("Success!".green)
             return HttpResponse.ok(.output(output))
         } catch {
-            print("Failure:".red + "\(error)")
+            logError("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
@@ -54,12 +54,12 @@ extension ShellHttpServer {
                 throw ShellHttpServerError.missingParameter("command")
             }
             let identifer = parameters.first(where: { $0.0 == "id" })?.1
-            print("Handling processing command: \n".cyan + command.yellow)
+            logMessage("Handling processing command: \n".cyan + command.yellow)
             let processIdentifer = try runNewProcess(for: command, with: identifer).resolveOrThrow()
-            print("Processing command success with identifer: ".green + processIdentifer)
+            logMessage("Processing command success with identifer: ".green + processIdentifer)
             return HttpResponse.ok(.processIdentifer(processIdentifer))
         } catch {
-            print("Failure:".red + "\(error)")
+            logError("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
@@ -70,12 +70,12 @@ extension ShellHttpServer {
             guard let identifer = parameters.first(where: { $0.0 == "id" })?.1 else {
                 throw ShellHttpServerError.missingParameter("id")
             }
-            print("Terminating command [\(identifer)]: ".cyan)
+            logMessage("Terminating command [\(identifer)]: ".cyan)
             let output = try terminateProcess(with: identifer).resolveOrThrow()
-            print("Terminating success!".green)
+            logMessage("Terminating success!".green)
             return HttpResponse.ok(.output(output))
         } catch {
-            print("Failure:".red + "\(error)")
+            logError("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
@@ -86,12 +86,12 @@ extension ShellHttpServer {
             guard let path = parameters.first(where: { $0.0 == "path" })?.1 else {
                 throw ShellHttpServerError.missingParameter("path")
             }
-            print("Sending file: ".cyan + path)
+            logMessage("Sending file: ".cyan + path)
             return HttpResponse.raw(200, "OK", [:]) { writer in
                 try writer.write(try File(path: path).read())
             }
         } catch {
-            print("Failure:".red + "\(error)")
+            logError("Failure:".red + "\(error)")
             return HttpResponse.badRequest(.error(error))
         }
     }
