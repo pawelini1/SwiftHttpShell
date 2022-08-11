@@ -16,11 +16,13 @@ public class HttpShell {
     
     public func shell(_ command: Command) throws -> Response {
         switch command.type {
-        case .shell(command: let cmd):
+        case .shell(command: let cmd, completion: let completion):
             return try XCTContext.runActivity(named: command.message) { activity in
-                return try runCodableRequest(.shell, parameters: [
+                let output = try runCodableRequest(.shell, parameters: [
                     "command": cmd
                 ]) as OutputResponse
+                try completion?(output)
+                return output
             }
         case .start(command: let cmd, identifer: let identifer):
             return try XCTContext.runActivity(named: command.message) { activity in

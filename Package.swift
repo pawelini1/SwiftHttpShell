@@ -18,7 +18,8 @@ let package = Package(
         .package(url: "https://github.com/JohnSundell/ShellOut.git", .upToNextMajor(from: "2.0.0")),
         .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.0.0")),
         .package(name: "Swifter", url: "https://github.com/httpswift/swifter.git", .upToNextMinor(from: "1.5.0")),
-        .package(name: "Promises", url: "https://github.com/google/promises.git", .upToNextMajor(from: "2.0.0"))
+        .package(name: "Promises", url: "https://github.com/google/promises.git", .upToNextMajor(from: "2.0.0")),
+        .package(name: "AnyCodable", url: "https://github.com/Flight-School/AnyCodable", .upToNextMajor(from: "0.6.0"))
     ],
     targets: [
         .target(
@@ -34,7 +35,8 @@ let package = Package(
         .target(
             name: "SwiftHttpShellClient",
             dependencies: [
-                "Promises"
+                "Promises",
+                "AnyCodable"
             ])
     ]
 )
